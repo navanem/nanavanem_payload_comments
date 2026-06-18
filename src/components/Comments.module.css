@@ -1,0 +1,117 @@
+.wrapper {
+  --pc-gap: 12px;
+  --pc-border: #e1e1e4;
+  --pc-bg: #ffffff;
+  --pc-fg: #1f1f23;
+  --pc-muted: #6b7280;
+  --pc-accent: #2563eb;
+  font-family: inherit;
+  color: var(--pc-fg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--pc-gap);
+}
+.comment {
+  border: 1px solid var(--pc-border);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--pc-bg);
+}
+.replies {
+  margin-top: var(--pc-gap);
+  margin-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--pc-gap);
+}
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--pc-muted);
+  margin-bottom: 6px;
+}
+.author {
+  font-weight: 600;
+  color: var(--pc-fg);
+}
+.reactions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+.reactionButton {
+  border: 1px solid var(--pc-border);
+  background: transparent;
+  border-radius: 999px;
+  padding: 2px 10px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+.reactionButton:hover {
+  border-color: var(--pc-accent);
+}
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--pc-border);
+  border-radius: 8px;
+  padding: 12px;
+}
+.row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.input,
+.textarea {
+  border: 1px solid var(--pc-border);
+  border-radius: 6px;
+  padding: 8px;
+  font: inherit;
+  width: 100%;
+  box-sizing: border-box;
+}
+.honeypot {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+.moodPicker {
+  display: flex;
+  gap: 6px;
+}
+.moodOption {
+  border: 1px solid var(--pc-border);
+  background: transparent;
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+.moodOptionActive {
+  border-color: var(--pc-accent);
+  background: rgba(37, 99, 235, 0.08);
+}
+.submit {
+  align-self: flex-start;
+  background: var(--pc-accent);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font: inherit;
+}
+.submit:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.notice {
+  font-size: 0.85rem;
+  color: var(--pc-muted);
+}

@@ -23,7 +23,7 @@
   },
   "files": ["dist"],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && node scripts/copy-assets.mjs",
     "clean": "rimraf dist",
     "dev": "payload dev",
     "test": "vitest run",
