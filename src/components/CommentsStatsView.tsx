@@ -1,5 +1,5 @@
 import { DefaultTemplate } from '@payloadcms/next/templates'
-import type { AdminViewServerProps } from 'payload'
+import type { AdminViewServerProps, Where } from 'payload'
 import React from 'react'
 
 const COMMENTS_SLUG = 'comments'
@@ -66,7 +66,7 @@ export async function CommentsStatsView({
 
   // Date filter is safe to push to the DB; collection filter is applied in JS to
   // avoid relying on polymorphic-relationship query support (DB-agnostic).
-  const where = since ? { createdAt: { greater_than_equal: since.toISOString() } } : {}
+  const where: Where = since ? { createdAt: { greater_than_equal: since.toISOString() } } : {}
 
   const [found, reactionsCount] = await Promise.all([
     payload.find({
