@@ -1,186 +1,184 @@
 # @navanem/payload-comments — Design
 
 **Date:** 2026-06-18
-**Statut:** Validé, prêt pour planification d'implémentation
-**Cible:** Payload 3.x
+**Status:** Approved, ready for implementation planning
+**Target:** Payload 3.x
 
-## Objectif
+## Goal
 
-Un plugin Payload de gestion de commentaires « façon Thrive Comments », mais
-idiomatique Payload et déployable facilement sur n'importe quel projet Payload 3.x.
+A Payload comment-management plugin "Thrive Comments style", but idiomatic to
+Payload and easy to deploy on any Payload 3.x project.
 
-Périmètre v1 (sans authentification) :
+v1 scope (no authentication):
 
-- N'importe qui peut laisser un commentaire (nom + email) avec une icône-réaction
-  (« humeur ») attachée à son propre commentaire.
-- N'importe qui peut réagir à un commentaire existant via un jeu d'emojis.
-- Validation/modération activable ou non avant publication.
-- Réponses imbriquées, **3 niveaux maximum**.
-- Anti-spam minimal natif.
-- Composant front React prêt à l'emploi, plus guide d'intégration front dans la doc.
+- Anyone can leave a comment (name + email) with a reaction icon ("mood")
+  attached to their own comment.
+- Anyone can react to an existing comment using an emoji set.
+- Pre-publish moderation that can be turned on or off.
+- Nested replies, **maximum 3 levels**.
+- Minimal built-in anti-spam.
+- Ready-to-use React front-end component, plus a front-end integration guide in
+  the docs.
 
 ## 1. Architecture
 
-Package npm scoped **`@navanem/payload-comments`** (TypeScript), basé sur la
-structure du *plugin template* officiel Payload :
+Scoped npm package **`@navanem/payload-comments`** (TypeScript), based on the
+official Payload *plugin template* structure:
 
-- `src/` — code du plugin
-- `dev/` — mini-app Payload pour développer et tester en local
+- `src/` — plugin code
+- `dev/` — small Payload app for local development and testing
 
-Le plugin est une fonction `commentsPlugin(options)` qui retourne
-`(config) => config` et injecte collections, endpoints, contrôle d'accès et hooks
-sans casser la config hôte. Respecte `disabled: true` (no-op), convention Payload.
+The plugin is a `commentsPlugin(options)` function that returns
+`(config) => config` and injects collections, endpoints, access control and
+hooks without breaking the host config. Respects `disabled: true` (no-op), a
+Payload convention.
 
-Stratégie de distribution : package préparé pour npm (build, exports propres),
-installable via Git en attendant une éventuelle publication.
+Distribution strategy: package prepared for npm (build, clean exports),
+installable via Git until eventually published.
 
-**Exports du package :**
+**Package exports:**
 
-- `@navanem/payload-comments` → la fonction plugin (back-end)
-- `@navanem/payload-comments/client` → le composant React `<Comments />` (`'use client'`)
-- `@navanem/payload-comments/types` → types partagés
+- `@navanem/payload-comments` → the plugin function (back end)
+- `@navanem/payload-comments/client` → the `<Comments />` React component (`'use client'`)
+- `@navanem/payload-comments/types` → shared types
 
-`payload`, `react`, `next` sont en **peerDependencies**.
+`payload`, `react`, `next` are **peerDependencies**.
 
-## 2. Modèle de données
+## 2. Data model
 
-### Collection `comments` (slug configurable via `commentsSlug`)
+### `comments` collection (slug configurable via `commentsSlug`)
 
-| Champ | Type | Notes |
+| Field | Type | Notes |
 |-------|------|-------|
-| `content` | textarea | requis, longueur min/max |
-| `authorName` | text | requis |
-| `authorEmail` | email | lecture **admin uniquement**, jamais exposé au public ; requis si `requireEmail` |
-| `mood` | select | jeu d'emojis = réaction (A) attachée par l'auteur à son commentaire |
-| `status` | select | `pending \| approved \| spam \| trash`, défaut selon `requireApproval` |
-| `relatedDoc` | relation polymorphe | `relationTo: enabledCollections` + `value` |
-| `parent` | relation → `comments` (self) | threading |
-| `depth` | number | 0–2 (3 niveaux max), calculé et **validé** côté serveur |
-| `reactionCounts` | json/group | compteurs dénormalisés par emoji (cache lecture rapide) |
-| `ipHash` | text | hashé avec sel, jamais d'IP en clair, admin only |
-| `fingerprintHash` | text | hashé avec sel, admin only |
+| `content` | textarea | required, min/max length |
+| `authorName` | text | required |
+| `authorEmail` | email | **admin read only**, never exposed publicly; required if `requireEmail` |
+| `mood` | select | emoji set = reaction (A) attached by the author to their comment |
+| `status` | select | `pending \| approved \| spam \| trash`, default from `requireApproval` |
+| `relatedDoc` | polymorphic relationship | `relationTo: enabledCollections` + `value` |
+| `parent` | relationship → `comments` (self) | threading |
+| `depth` | number | 0–2 (3 levels max), computed and **validated** server-side |
+| `reactionCounts` | json/group | denormalized counts per emoji (fast-read cache) |
+| `ipHash` | text | salted hash, never clear-text IP, admin only |
+| `fingerprintHash` | text | salted hash, admin only |
 
-### Collection `comment-reactions` (légère, groupée dans l'admin)
+### `comment-reactions` collection (lightweight, grouped in admin)
 
-Champs : `comment`, `emoji`, `ipHash`, `fingerprintHash`.
+Fields: `comment`, `emoji`, `ipHash`, `fingerprintHash`.
 
-Source de vérité pour les réactions (B) ; permet la déduplication et le recalcul
-des compteurs. `comments.reactionCounts` est un cache dérivé de cette collection.
+Source of truth for reactions (B); enables de-duplication and recomputing the
+counts. `comments.reactionCounts` is a cache derived from this collection.
 
-## 3. Endpoints publics (REST custom)
+## 3. Public endpoints (custom REST)
 
-- `GET /api/comments/tree?relationTo=&docId=` — arbre des commentaires **approuvés**
-  uniquement (≤ 3 niveaux), `authorEmail` exclu de la réponse.
-- `POST /api/comments/submit` — dépôt anonyme : honeypot, rate-limit par `ipHash`,
-  longueur min/max, blocage de liens optionnel, validation de profondeur. Retourne
-  le commentaire publié, ou un message « en attente de modération ».
-- `POST /api/comments/:id/react` — ajoute/retire une réaction (B), dédupliquée par
-  `ipHash + fingerprintHash`, met à jour `reactionCounts`. Toujours immédiat (non modéré).
+- `GET /api/comments/tree?relationTo=&docId=` — tree of **approved** comments
+  only (≤ 3 levels), `authorEmail` excluded from the response.
+- `POST /api/comments/submit` — anonymous submission: honeypot, per-`ipHash`
+  rate limit, min/max length, optional link blocking, depth validation. Returns
+  the published comment, or an "awaiting moderation" message.
+- `POST /api/comments/:id/react` — adds/removes a reaction (B), de-duplicated by
+  `ipHash + fingerprintHash`, updates `reactionCounts`. Always immediate (not moderated).
 
-La création directe via l'API REST standard de la collection est **fermée au public** :
-le dépôt passe obligatoirement par `/submit` pour garantir l'anti-spam.
+Direct creation via the collection's standard REST API is **closed to the
+public**: submission must go through `/submit` to enforce anti-spam.
 
-## 4. Contrôle d'accès & anti-spam
+## 4. Access control & anti-spam
 
-**Accès :**
+**Access:**
 
-- `read` public : uniquement `status = approved`. Admins : tout.
-- `create` : désactivé pour le public (endpoint only).
-- `update` / `delete` : admins seulement.
+- Public `read`: only `status = approved`. Admins: everything.
+- `create`: disabled for the public (endpoint only).
+- `update` / `delete`: admins only.
 
-**Anti-spam natif v1 :**
+**Built-in anti-spam v1:**
 
-- Honeypot (champ caché).
-- Rate-limiting par `ipHash` (fenêtre + max configurables, store en mémoire).
-- Longueur min/max du contenu.
-- Blocage de liens optionnel.
-- Hashing IP/empreinte avec sel (`ipSalt` ou variable d'environnement) — aucune IP
-  en clair stockée.
-- Honnête sur ses limites : dissuasif sans login, pas infaillible. Pas de service
-  tiers (Akismet, etc.) en v1.
+- Honeypot (hidden field).
+- Rate limiting per `ipHash` (configurable window + max, in-memory store).
+- Min/max content length.
+- Optional link blocking.
+- Salted IP/fingerprint hashing (`ipSalt` or env var) — no clear-text IP stored.
+- Honest about its limits: deterrent without login, not foolproof. No third-party
+  service (Akismet, etc.) in v1.
 
-## 5. Options de configuration
+## 5. Configuration options
 
 ```ts
 commentsPlugin({
-  enabledCollections: ['posts', 'pages'], // requis
-  requireApproval: true,        // défaut true → nouveaux commentaires en `pending`
+  enabledCollections: ['posts', 'pages'], // required
+  requireApproval: true,        // default true → new comments are `pending`
   requireEmail: false,
   maxDepth: 3,                  // 1..3
-  reactions: DEFAULT_REACTIONS, // 👍 ❤️ 😂 😮 😢 👎, surchargeable
+  reactions: DEFAULT_REACTIONS, // 👍 ❤️ 😂 😮 😢 👎, overridable
   maxLength: 2000,
   minLength: 2,
   blockLinks: false,
   rateLimit: { windowMs: 60000, max: 5 },
-  commentsSlug: 'comments',     // évite les collisions
+  commentsSlug: 'comments',     // avoids collisions
   ipSalt: process.env.COMMENTS_IP_SALT,
   disabled: false,
 })
 ```
 
-Le même jeu `reactions` sert pour l'humeur (A) et pour les réactions aux
-commentaires (B).
+The same `reactions` set is used for the mood (A) and for reactions on comments (B).
 
-## 6. Composant front `<Comments />`
+## 6. Front-end component `<Comments />`
 
-Composant React client (`'use client'`) stylé, déposable dans un front Next.js :
+Styled React client component (`'use client'`), drop-in for a Next.js front end:
 
 ```tsx
-<Comments serverURL="https://exemple.com" relationTo="posts" docId={post.id} />
+<Comments serverURL="https://example.com" relationTo="posts" docId={post.id} />
 ```
 
-Gère : récupération de l'arbre, affichage imbriqué (≤ 3 niveaux), formulaire de
-dépôt (nom, email si requis, texte, sélecteur d'humeur, honeypot caché), boutons
-de réaction sur chaque commentaire.
+Handles: tree fetching, nested rendering (≤ 3 levels), submission form (name,
+email if required, text, mood picker, hidden honeypot), and reaction buttons on
+each comment.
 
-- **Sans dépendance lourde.**
-- Styles via CSS Modules + variables CSS surchargeables (thématisable).
-- Optionnel : l'intégrateur peut tout reconstruire à partir des endpoints.
+- **No heavy dependency.**
+- Styles via CSS Modules + overridable CSS variables (themeable).
+- Optional: integrators can rebuild everything from the endpoints.
 
-## 7. Fidélité visuelle admin
+## 7. Admin visual fidelity
 
-S'appuie sur les **types de champs et composants natifs Payload** : select à badges
-pour le statut, filtres de liste, groupes de champs, colonnes de liste
-personnalisées. Pas de surcouche UI exotique. La vue « Comments » offre un filtre
-par statut et les actions approuver / spam / trash via les mécanismes natifs.
-`comment-reactions` est rangée dans un groupe admin pour ne pas encombrer.
+Relies on **native Payload field types and components**: badge select for status,
+list filters, field groups, custom list columns. No exotic UI layer. The
+"Comments" view offers a status filter and approve / spam / trash actions through
+native mechanisms. `comment-reactions` is grouped in the admin to avoid clutter.
 
-## 8. Structure du repo
+## 8. Repo structure
 
 ```
 src/                 # plugin (collections, endpoints, access, hooks, utils, client)
-dev/                 # mini-app Payload de dev/test
+dev/                 # Payload dev/test app
 docs/                # configuration.md, frontend-integration.md, moderation.md
-docs/superpowers/specs/  # ce design
-README.md            # install + quickstart + lien vers docs
-CHANGELOG.md         # Keep a Changelog, SemVer, démarrage v0.1.0
+docs/superpowers/specs/  # this design
+README.md            # install + quickstart + link to docs
+CHANGELOG.md         # Keep a Changelog, SemVer, starting at v0.1.0
 .gitignore           # node_modules, dist, .env, etc.
 LICENSE              # MIT
-package.json         # exports map, peerDeps, scripts build (tsc)
+package.json         # exports map, peerDeps, build scripts (tsc)
 ```
 
 ## 9. Tests
 
-Tests d'intégration sur l'app `dev/` (approche TDD) couvrant au minimum :
+Integration tests on the `dev/` app (TDD approach) covering at least:
 
-- Profondeur ≤ 3 imposée (rejet au-delà).
-- Défauts de statut selon `requireApproval`.
-- Déduplication des réactions par `ipHash + fingerprintHash`.
-- Anti-spam (honeypot, rate-limit, longueur, liens).
-- Accès : public ne voit que `approved`, `authorEmail` jamais exposé.
+- Depth ≤ 3 enforced (rejection beyond).
+- Status defaults from `requireApproval`.
+- Reaction de-duplication by `ipHash + fingerprintHash`.
+- Anti-spam (honeypot, rate limit, length, links).
+- Access: public sees only `approved`, `authorEmail` never exposed.
 
 ## 10. Versioning & conventions
 
-- **SemVer** + `CHANGELOG.md` (format Keep a Changelog), tags git `vX.Y.Z`,
-  démarrage en `0.1.0`.
-- **Licence : MIT.**
-- **Commits :** auteur `navanem <tools@sunitech.ch>`. Aucune référence à
-  Claude/Anthropic dans le code, les commentaires, le README, le CHANGELOG, ni en
-  co-auteur.
+- **SemVer** + `CHANGELOG.md` (Keep a Changelog format), git tags `vX.Y.Z`,
+  starting at `0.1.0`.
+- **License: MIT.**
+- **Commits:** author `navanem <tools@sunitech.ch>`. No reference to
+  Claude/Anthropic anywhere (code, comments, README, CHANGELOG, or co-author).
 
-## Hors périmètre v1 (futur)
+## Out of scope for v1 (future)
 
-- Authentification / commentaires liés à des membres.
-- Notifications email, Gravatar.
-- Services anti-spam tiers (Akismet).
-- Widget JS embarquable hors Next (`<script>` + iframe).
+- Authentication / member-linked comments.
+- Email notifications, Gravatar.
+- Third-party anti-spam services (Akismet).
+- Embeddable JS widget for non-Next sites (`<script>` + iframe).
