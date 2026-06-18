@@ -45,14 +45,14 @@ The component uses CSS Modules with CSS variables. Override them by wrapping:
 ### Get the comment tree
 
 ```
-GET /api/comments/tree?relationTo=posts&docId=<id>
+GET /api/comments-api/tree?relationTo=posts&docId=<id>
 → { comments: PublicComment[] }   // approved only, nested, email stripped
 ```
 
 ### Submit a comment
 
 ```
-POST /api/comments/submit
+POST /api/comments-api/submit
 Content-Type: application/json
 
 {
@@ -74,7 +74,7 @@ Leave `honeypot` empty; it is a bot trap. Send a stable `fingerprint` string
 ### React to a comment
 
 ```
-POST /api/comments/<commentId>/react
+POST /api/comments-api/<commentId>/react
 Content-Type: application/json
 
 { "emoji": "like", "fingerprint": "<browser fingerprint string>" }
