@@ -1,0 +1,52 @@
+{
+  "name": "@navanem/payload-comments",
+  "version": "0.1.0",
+  "description": "Anonymous comments and reactions plugin for Payload 3.x with optional moderation and 3-level threads.",
+  "license": "MIT",
+  "author": "navanem <tools@sunitech.ch>",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./client": {
+      "types": "./dist/exports/client.d.ts",
+      "default": "./dist/exports/client.js"
+    },
+    "./types": {
+      "types": "./dist/exports/types.d.ts",
+      "default": "./dist/exports/types.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "rimraf dist",
+    "dev": "payload dev",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "peerDependencies": {
+    "payload": "^3.0.0",
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "devDependencies": {
+    "@payloadcms/db-sqlite": "^3.0.0",
+    "@payloadcms/next": "^3.0.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "payload": "^3.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "rimraf": "^6.0.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  },
+  "engines": {
+    "node": ">=18.20.0"
+  }
+}
