@@ -1,6 +1,6 @@
 # @navanem/payload-comments
 
-Anonymous comments and reactions for Payload 3.x — with optional pre-publish
+Anonymous comments and reactions for Payload 3.x — with Markdown comment bodies, optional pre-publish
 moderation, mood emojis, reactions on comments, and up to 3 levels of replies.
 
 ## Features
