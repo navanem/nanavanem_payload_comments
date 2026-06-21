@@ -28,7 +28,7 @@ The bundled `<Comments />` component on a published page: a threaded comment wit
 
 ![The comments moderation queue in the Payload admin](https://www.navanem.com/api/media/file/navanem-plugin-payload-comments-admin.png)
 
-Every comment lands in a standard Payload collection, so moderation uses the admin UI you already know. The list is your moderation queue — author, excerpt, target collection, status and date — with native filtering and bulk actions; approving a pending comment publishes it instantly.
+Every comment lands in a standard Payload collection, so moderation uses the admin UI you already know. The list is your moderation queue — author, excerpt, a **Thread** indicator (top-level vs "↳ Reply to \<author\>"), target document, status and date — with native filtering and bulk actions; approving a pending comment publishes it instantly.
 
 ![A single comment's detail view in the admin](https://www.navanem.com/api/media/file/navanem-plugin-payload-comments-admin-details.png)
 

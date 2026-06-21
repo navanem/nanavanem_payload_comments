@@ -10,7 +10,7 @@ export function buildCommentsCollection(options: ResolvedOptions): CollectionCon
     labels: { singular: 'Comment', plural: 'Comments' },
     admin: {
       useAsTitle: 'authorName',
-      defaultColumns: ['authorName', 'content', 'status', 'createdAt'],
+      defaultColumns: ['authorName', 'content', 'thread', 'relatedDoc', 'status', 'createdAt'],
       group: 'Comments',
     },
     access: {
@@ -28,6 +28,48 @@ export function buildCommentsCollection(options: ResolvedOptions): CollectionCon
     fields: [
       { name: 'content', type: 'textarea', required: true },
       { name: 'authorName', type: 'text', required: true },
+      {
+        // Virtual (not stored): a moderation-list label distinguishing a top-level
+        // comment from a reply, with the parent author. Computed only for admin
+        // reads — the public /tree endpoint reads with no user, so it never runs
+        // there (no extra query, nothing added to the public payload).
+        name: 'thread',
+        type: 'text',
+        virtual: true,
+        label: 'Thread',
+        admin: {
+          readOnly: true,
+          position: 'sidebar',
+          description: 'Top-level comment or a reply (shown in the moderation list).',
+        },
+        hooks: {
+          afterRead: [
+            async ({ data, req }) => {
+              if (!req?.user) return undefined
+              const depth = Number((data as { depth?: unknown })?.depth ?? 0)
+              const parent = (data as { parent?: unknown })?.parent
+              if (!parent && depth <= 0) return 'Top-level'
+              let who = ''
+              try {
+                const pid = parent && typeof parent === 'object' ? (parent as { id?: unknown }).id : parent
+                if (pid != null) {
+                  const p = await req.payload.findByID({
+                    collection: options.commentsSlug as CollectionSlug,
+                    id: pid as string | number,
+                    depth: 0,
+                    overrideAccess: true,
+                  })
+                  const name = (p as { authorName?: string } | null)?.authorName
+                  if (name) who = ` to ${name}`
+                }
+              } catch {
+                /* parent removed */
+              }
+              return `↳ Reply${who}`
+            },
+          ],
+        },
+      },
       {
         name: 'authorEmail',
         type: 'email',

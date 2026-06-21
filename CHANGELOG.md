@@ -5,6 +5,17 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-06-21
+
+### Added
+
+- **Thread column in the moderation list**: the `comments` list now shows a `Thread`
+  column ("Top-level" or "↳ Reply to <author>") plus the target `relatedDoc`, so you can
+  see at a glance whether a row is a reply, to whom, and which document it belongs to.
+  Implemented as a `virtual` field (no database column, no migration) whose `afterRead`
+  is gated to authenticated admin reads — the public comment-tree endpoint is unaffected
+  (no extra query, the field is never added to the public payload).
+
 ## [0.3.0] - 2026-06-19
 
 ### Added
