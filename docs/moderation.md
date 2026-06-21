@@ -20,6 +20,12 @@ Open the **Comments** collection. Use the `status` filter to find pending
 comments, open one, and change its status in the sidebar. Only `approved`
 comments are returned by the public API.
 
+The moderation list includes a **Thread** column ("Top-level" or
+"↳ Reply to \<author\>") alongside the target document, so you can tell at a
+glance whether a row is a reply, to whom, and which document it belongs to. It is
+a virtual field (no database column) computed only for authenticated admin reads,
+so the public comment-tree endpoint is unaffected.
+
 The author's email is stored for moderation but is never exposed by the public
 API or to non-authenticated users.
 
