@@ -149,7 +149,7 @@ native mechanisms. `comment-reactions` is grouped in the admin to avoid clutter.
 src/                 # plugin (collections, endpoints, access, hooks, utils, client)
 dev/                 # Payload dev/test app
 docs/                # configuration.md, frontend-integration.md, moderation.md
-docs/superpowers/specs/  # this design
+docs/planning/specs/  # this design
 README.md            # install + quickstart + link to docs
 CHANGELOG.md         # Keep a Changelog, SemVer, starting at v0.1.0
 .gitignore           # node_modules, dist, .env, etc.
@@ -172,8 +172,7 @@ Integration tests on the `dev/` app (TDD approach) covering at least:
 - **SemVer** + `CHANGELOG.md` (Keep a Changelog format), git tags `vX.Y.Z`,
   starting at `0.1.0`.
 - **License: MIT.**
-- **Commits:** author `navanem <tools@sunitech.ch>`. No AI-assistant
-  attribution anywhere (code, comments, README, CHANGELOG, or co-author).
+- **Commits:** author `navanem <tools@sunitech.ch>`.
 
 ## Out of scope for v1 (future)
 
